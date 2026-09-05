@@ -13,6 +13,14 @@ ground=pygame.transform.scale(pygame.image.load("pictures/ground.png"), (Width*2
 pipegap=250
 gamestate="start"
 groundscroll=0
+Score=0
+pastpipe=False
+font1=pygame.font.SysFont("comic sans", 60, True)
+
+def drawtext(text, font, x, y, color):
+    message= font.render(text, True, color)
+    screen.blit(message, (x, y))
+    
 class Bird(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -21,7 +29,7 @@ class Bird(pygame.sprite.Sprite):
         self.counter=0
         for i in range(3):
             img=pygame.image.load(f"pictures/bird{i+1}.png")
-            img=pygame.transform.scale(img, (150, 100))
+            #img=pygame.transform.scale(img, (150, 100))
             self.images.append(img)
         self.image=self.images[self.index]
         self.rect=self.image.get_rect()
@@ -51,6 +59,7 @@ class Bird(pygame.sprite.Sprite):
             self.image=pygame.transform.rotate(self.image, self.v*-2)
         if gamestate=="stop":
             self.image=pygame.transform.rotate(self.image, -90)
+
             gamestate="end"
             #print("gameover")
 
@@ -59,7 +68,7 @@ class Pipe(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image=pygame.image.load("C:/Users/SAMUEL NIODE/Documents/Visual Studio Code/PyGame/pictures/pipe.png")
         self.rect=self.image.get_rect()
-        self.imgae=pygame.transform.scale(self.image, (100, 200))
+       # self.image=pygame.transform.scale(self.image, (100, 200))
         if position=="top":
             self.image=pygame.transform.flip(self.image,False,True)
             self.rect.bottomleft=[x,y-pipegap/2]
@@ -75,14 +84,18 @@ PipeGroup=pygame.sprite.Group()
 BirdGroup=pygame.sprite.Group()
 flappy=Bird(100, Height/2)
 BirdGroup.add(flappy)
-while True:
+run=True
+
+while run:
     screen.blit(background, (0, 0))
     screen.blit(ground, (groundscroll, Height-Height/4))
-    
+    drawtext(f"Score={Score}", font1, 50, 50, "Brown")
     BirdGroup.draw(screen)
     BirdGroup.update()
+    PipeGroup.draw(screen)
     if gamestate=="play":
         groundscroll-=5
+        PipeGroup.update()
         if groundscroll<-Width:
             groundscroll=0
         if flappy.rect.bottom>Height-Height/4:
@@ -95,8 +108,22 @@ while True:
             PipeGroup.add(bottompipe)
             PipeGroup.add(toppipe)
             lastpipe=latesttime
-        PipeGroup.update()
-        PipeGroup.draw(screen)
+
+        #updating the score
+        if len(PipeGroup)>0:
+            if BirdGroup.sprites()[0].rect.left>PipeGroup.sprites()[0].rect.left and BirdGroup.sprites()[0].rect.right<PipeGroup.sprites()[0].rect.right and pastpipe==False:
+                pastpipe= True
+                if pastpipe==True:
+                    if BirdGroup.sprites()[0].rect.left>PipeGroup.sprites()[0].rect.right:
+                        Score+=1
+                        pastpipe= False
+        
+       
+        
+        if pygame.sprite.groupcollide(BirdGroup, PipeGroup, False, False) or (flappy.rect.top<0):
+            gamestate= "end"
+    if gamestate=="end":
+        drawtext("GAMEOVER", font1, Width/2, Height/2, "Brown")
     for i in pygame.event.get():
         if i.type==pygame.QUIT: 
             pygame.quit()
